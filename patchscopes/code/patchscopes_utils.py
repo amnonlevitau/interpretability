@@ -799,6 +799,84 @@ def set_hs_patch_hooks_llama_batch(
   return hooks
 
 
+def set_hs_patch_hooks_gpt2_batch(
+    model,
+    hs_patch_config,
+    module="hs",
+    patch_input=False,
+    generation_mode=False,
+):
+    """GPT-2 patch hooks - supporting batch."""
+    if module != "hs":
+        raise ValueError("Module %s not yet supported", module)
+
+    def patch_hs(name, position_hs, patch_input, generation_mode):
+        def pre_hook(module, inp):
+            # inp[0]: (batch, sequence, hidden_state)
+            idx_, position_, hs_ = (
+                position_hs["batch_idx"],
+                position_hs["position_target"],
+                position_hs["hidden_rep"],
+            )
+            input_len = len(inp[0][idx_])
+            if generation_mode and input_len == 1:
+                return
+            inp[0][idx_][position_] = hs_
+
+        def post_hook(module, inp, output):
+            idx_, position_, hs_ = (
+                position_hs["batch_idx"],
+                position_hs["position_target"],
+                position_hs["hidden_rep"],
+            )
+            if "skip_ln" in name:
+                # output: (batch, sequence, hidden_state)
+                output_len = len(output[idx_])
+                if generation_mode and output_len == 1:
+                    return
+                output[idx_][position_] = hs_
+            else:
+                # output[0]: (batch, sequence, hidden_state)
+                output_len = len(output[0][idx_])
+                if generation_mode and output_len == 1:
+                    return
+                output[0][idx_][position_] = hs_
+
+        if patch_input:
+            return pre_hook
+        else:
+            return post_hook
+
+    hooks = []
+
+    for item in hs_patch_config:
+        i = item["layer_target"]
+        skip_final_ln = item["skip_final_ln"]
+        if patch_input:
+            hooks.append(
+                model.transformer.h[i].register_forward_pre_hook(
+                    patch_hs(f"patch_hs_{i}", item, patch_input, generation_mode)
+                )
+            )
+        else:
+            if skip_final_ln and i == len(model.transformer.h) - 1:
+                hooks.append(
+                    model.transformer.ln_f.register_forward_hook(
+                        patch_hs(
+                            f"patch_hs_{i}_skip_ln", item, patch_input, generation_mode
+                        )
+                    )
+                )
+            else:
+                hooks.append(
+                    model.transformer.h[i].register_forward_hook(
+                        patch_hs(f"patch_hs_{i}", item, patch_input, generation_mode)
+                    )
+                )
+
+    return hooks
+
+
 def evaluate_patch_next_token_prediction_batch(
     mt, df, batch_size=256, transform=None, module="hs"
 ):

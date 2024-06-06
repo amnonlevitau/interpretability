@@ -24,6 +24,35 @@ import re
 import torch
 import transformers
 
+import torch
+
+def get_gpu_memory_usage():
+    total_memory = torch.cuda.get_device_properties(0).total_memory
+    reserved_memory = torch.cuda.memory_reserved(0)
+    allocated_memory = torch.cuda.memory_allocated(0)
+    free_memory = reserved_memory - allocated_memory
+    
+    print(f"Total memory: {total_memory / (1024**3):.2f} GB")
+    print(f"Reserved memory: {reserved_memory / (1024**3):.2f} GB")
+    print(f"Allocated memory: {allocated_memory / (1024**3):.2f} GB")
+    print(f"Free memory: {free_memory / (1024**3):.2f} GB")
+
+def get_all_gpus_memory_usage():
+    num_gpus = torch.cuda.device_count()
+    for i in range(num_gpus):
+        total_memory = torch.cuda.get_device_properties(i).total_memory
+        reserved_memory = torch.cuda.memory_reserved(i)
+        allocated_memory = torch.cuda.memory_allocated(i)
+        free_memory = reserved_memory - allocated_memory
+        
+        print(f"GPU {i}:")
+        print(f"  Total memory: {total_memory / (1024**3):.2f} GB")
+        print(f"  Reserved memory: {reserved_memory / (1024**3):.2f} GB")
+        print(f"  Allocated memory: {allocated_memory / (1024**3):.2f} GB")
+        print(f"  Free memory: {free_memory / (1024**3):.2f} GB\n")
+# Check memory usage before running the model
+
+
 
 class ModelAndTokenizer:
   """An object to hold a GPT-style language model and tokenizer."""
@@ -48,6 +77,8 @@ class ModelAndTokenizer:
           torch_dtype=torch_dtype
           )
       if device is not None:
+        torch.cuda.empty_cache()
+        get_all_gpus_memory_usage()
         model.to(device)
       set_requires_grad(False, model)
       model.eval()
