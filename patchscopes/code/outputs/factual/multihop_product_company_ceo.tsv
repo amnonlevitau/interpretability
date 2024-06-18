@@ -1,0 +1,334 @@
+	sample_id	prompt_source	position_source	prompt_target	position_target	baseline_hop2	baseline_hop3	baseline_multihop3	hop1	hop2	hop3	generations_baseline_hop2	is_correct_baseline_hop2	generations_baseline_hop3	is_correct_baseline_hop3	generations_baseline_multihop3	is_correct_baseline_multihop3
+0	0	WinDbg was created by	-1	Who is the current CEO of {}	-1	WinDbg was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created WinDbg	WinDbg	Microsoft	Satya Nadella	a team of experienced developers who have been working in the field of software development for many years . We	False	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ I ' m trying to find out who the current CE O of the company is that"	False
+1	1	.NET Framework was created by	-1	Who is the current CEO of {}	-1	.NET Framework was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created .NET Framework	.NET Framework	Microsoft	Satya Nadella	Microsoft and is a software development framework that can be used to create Windows desktop applications , web applications ,	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ As of  2 0 2 1 , the current CE O of Microsoft is Sat ya"	False
+2	2	Internet Explorer was created by	-1	Who is the current CEO of {}	-1	Internet Explorer was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Internet Explorer	Internet Explorer	Microsoft	Satya Nadella	the U . S . Department of Def ense in the  1 9 6 0 s as a way	False	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ As of  2 0 2 1 , the current CE O of Microsoft is Sat ya"	False
+3	3	MS-DOS was created by	-1	Who is the current CEO of {}	-1	MS-DOS was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created MS-DOS	MS-DOS	Microsoft	Satya Nadella	a team of engine ers at Microsoft , led by Bill G ates , in the early  1 9	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Microsoft is Sat ya Nad"	False
+4	4	Office Open XML was created by	-1	Who is the current CEO of {}	-1	Office Open XML was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Office Open XML	Office Open XML	Microsoft	Satya Nadella	Microsoft , it is now an ISO standard , and is supported by a large number of software vend ors	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ The current CE O of the company that created Office Open XML ( O O XML )"	False
+5	5	TypeScript was created by	-1	Who is the current CEO of {}	-1	TypeScript was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created TypeScript	TypeScript	Microsoft	Satya Nadella	the German designer Ber th old Type Found ry in  1 9 0 8 . It was designed by	False	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ Type Script is a programming language that was created by Microsoft . The current CE O of"	False
+6	6	Bing Maps Platform was created by	-1	Who is the current CEO of {}	-1	Bing Maps Platform was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Bing Maps Platform	Bing Maps Platform	Microsoft	Satya Nadella	Microsoft , it is a mapping and location data platform that provides developers with the tools and services they need	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of the company that created B"	False
+7	7	Outlook Express was created by	-1	Who is the current CEO of {}	-1	Outlook Express was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Outlook Express	Outlook Express	Microsoft	Satya Nadella	Microsoft , it is not a Microsoft product . It is a separate program that is made by a different	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ Out look Express is a dis cont in ued email client developed by Microsoft . The last"	False
+8	8	PowerShell was created by	-1	Who is the current CEO of {}	-1	PowerShell was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created PowerShell	PowerShell	Microsoft	Satya Nadella	Microsoft to provide a more powerful command - line interface for Windows systems administr ators , it has since become	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ As of  2 0 2 1 , the current CE O of the company that created"	False
+9	9	Windows 95 was created by	-1	Who is the current CEO of {}	-1	Windows 95 was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Windows 95	Windows 95	Microsoft	Satya Nadella	"Microsoft . 
+ 
+ Comment : I ' m sorry , but that is not the correct answer . "	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ As of  2 0 2 1 , the current CE O of Microsoft is Sat ya"	False
+10	10	Xbox 360 was created by	-1	Who is the current CEO of {}	-1	Xbox 360 was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Xbox 360	Xbox 360	Microsoft	Satya Nadella	Microsoft with the intention of being the ult imate g aming console . It was released in  2 0	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ A . Steve Job s 
+ B . Bill G ates 
+ C . Sat ya Nad ella"	True
+11	11	Zune was created by	-1	Who is the current CEO of {}	-1	Zune was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Zune	Zune	Microsoft	Satya Nadella	"Microsoft to comp ete with the i Pod , but it never really caught on . 
+ 
+ I have"	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ A : The current CE O of the company that created Z une is Steve Ball mer ."	False
+12	12	Visual Basic Script was created by	-1	Who is the current CEO of {}	-1	Visual Basic Script was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Visual Basic Script	Visual Basic Script	Microsoft	Satya Nadella	Microsoft in the early  1 9 9 0 s as a way to make it easier for non -	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"ing ? 
+ 
+ I ' m trying to find out who the current CE O is of the company"	False
+13	13	Virtual Hard Disk was created by	-1	Who is the current CEO of {}	-1	Virtual Hard Disk was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Virtual Hard Disk	Virtual Hard Disk	Microsoft	Satya Nadella	Microsoft to provide a virtual hard disk that can be used to store files and programs on a computer that	True	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"Manager ( V HD ) technology ? 
+ 
+ I ' m trying to find out who the current CE"	False
+14	14	Robocopy was created by	-1	Who is the current CEO of {}	-1	Robocopy was created by	Who is the current CEO of Microsoft	Who is the current CEO of the company that created Robocopy	Robocopy	Microsoft	Satya Nadella	Frank C . Mu eller , a computer science research er at the University of Washington , in the early	False	"? 
+ 
+ a ) Sat ya Nad ella 
+ b ) Bill G ates 
+ c ) Steve Ball"	True	"? 
+ 
+ A . Microsoft 
+ B . IBM 
+ C . Google 
+ D . Apple 
+ 
+"	False
+15	15	Siri was created by	-1	Who is the current CEO of {}	-1	Siri was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created Siri	Siri	Apple	Tim Cook	D AR PA , the Def ense Advanced Research Project s Agency , a branch of the US Department of	False	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ As of  2 0 2 1 , the current CE O of the company that created"	False
+16	16	App Store was created by	-1	Who is the current CEO of {}	-1	App Store was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created App Store	App Store	Apple	Tim Cook	Apple , which is a subs idi ary of Apple Inc . The App Store is a digital distribution platform	True	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Apple Inc . is Tim"	False
+17	17	CarPlay was created by	-1	Who is the current CEO of {}	-1	CarPlay was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created CarPlay	CarPlay	Apple	Tim Cook	Apple to allow users to access their iPhone ' s music , navigation , and other features while driving .	True	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Apple is Tim Cook ."	True
+18	18	MacBook Air was created by	-1	Who is the current CEO of {}	-1	MacBook Air was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created MacBook Air	MacBook Air	Apple	Tim Cook	Apple to be a light weight , port able , and powerful laptop that could be used for both work	True	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ As of  2 0 2 1 , the current CE O of Apple Inc . is"	False
+19	19	Xcode was created by	-1	Who is the current CEO of {}	-1	Xcode was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created Xcode	Xcode	Apple	Tim Cook	"Apple , and it is only available on Mac s . 
+ 
+ Comment : I ' m sorry ,"	True	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Apple Inc . is Tim"	False
+20	20	macOS was created by	-1	Who is the current CEO of {}	-1	macOS was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created macOS	macOS	Apple	Tim Cook	Apple , and it is the primary operating system for Mac int osh computers . It is known for its	True	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"and mac OS ? 
+ 
+ As of  2 0 2 1 , the current CE O of Apple"	False
+21	21	iWork was created by	-1	Who is the current CEO of {}	-1	iWork was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created iWork	iWork	Apple	Tim Cook	Apple Inc . in  1 9 9 8 as a suite of product ivity software for the Mac int	True	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ App le . Apple is the company that created i Work . 
+ Who is the CE O"	False
+22	22	Safari was created by	-1	Who is the current CEO of {}	-1	Safari was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created Safari	Safari	Apple	Tim Cook	a team of engine ers and design ers at Google with the goal of building a browser that would be	False	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ A . Tim Cook 
+ B . Steve Job s 
+ C . Mark Z ucker berg"	True
+23	23	QuickTime was created by	-1	Who is the current CEO of {}	-1	QuickTime was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created QuickTime	QuickTime	Apple	Tim Cook	Jim J arm usch , a film maker who has made a career out of making films that are often	False	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ App le . Apple Inc . is the company that created Quick Time . 
+ What is the"	False
+24	24	TextEdit was created by	-1	Who is the current CEO of {}	-1	TextEdit was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created TextEdit	TextEdit	Apple	Tim Cook	a team of experienced writers , edit ors , and design ers who are passion ate about helping people improve	False	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ Who is the current CE O of the company that created Text Edit ? 
+ 
+ A"	False
+25	25	WebKit was created by	-1	Who is the current CEO of {}	-1	WebKit was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created WebKit	WebKit	Apple	Tim Cook	the K DE project , which is a free and open - source software community that creates software for desktop	False	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of the company that created Web"	False
+26	26	QuickDraw was created by	-1	Who is the current CEO of {}	-1	QuickDraw was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created QuickDraw	QuickDraw	Apple	Tim Cook	a team of experienced trad ers and financial exper ts who understand the challeng es faced by trad ers and	False	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ A : The current CE O of the company that created Quick Draw is not public ly"	False
+27	27	Time Machine (macOS) was created by	-1	Who is the current CEO of {}	-1	Time Machine (macOS) was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created Time Machine (macOS)	Time Machine (macOS)	Apple	Tim Cook	the same team that brought you the popular Twitter client , Twitter r ific . Time Machine is a simple	False	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"and what is their current focus ? 
+ 
+ I ' m trying to find out who the current CE"	False
+28	28	MessagePad was created by	-1	Who is the current CEO of {}	-1	MessagePad was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created MessagePad	MessagePad	Apple	Tim Cook	a team of experienced educ ators and exper ts in the field of education , with the goal of providing	False	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ I ' m trying to find out who the current CE O is of the company that"	False
+29	29	Macbook Pro was created by	-1	Who is the current CEO of {}	-1	Macbook Pro was created by	Who is the current CEO of Apple	Who is the current CEO of the company that created Macbook Pro	Macbook Pro	Apple	Tim Cook	Apple to be a high - per formance laptop that can handle heavy - d ut y tasks such as	True	"? 
+ 
+ a ) Tim Cook 
+ b ) Steve Job s 
+ c ) Mark Z ucker berg"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Apple Inc . is Tim"	False
+30	30	Chromecast was created by	-1	Who is the current CEO of {}	-1	Chromecast was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Chromecast	Chromecast	Google	Sundar Pichai	Google , and it allows users to stream video and audio from the internet to their TV using a small	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ As of  2 0 2 1 , the current CE O of Google , the company"	False
+31	31	Chromebook was created by	-1	Who is the current CEO of {}	-1	Chromebook was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Chromebook	Chromebook	Google	Sundar Pichai	Google and is a type of laptop that runs on the Chrome operating system . It is designed to be	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"s ? 
+ 
+ As of  2 0 2 1 , the CE O of Google , the company"	False
+32	32	Wear OS was created by	-1	Who is the current CEO of {}	-1	Wear OS was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Wear OS	Wear OS	Google	Sundar Pichai	Google and was first released in  2 0 1 5 . It is an open - source operating system	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Google , the company that"	False
+33	33	G Suite was created by	-1	Who is the current CEO of {}	-1	G Suite was created by	Who is the current CEO of Google	Who is the current CEO of the company that created G Suite	G Suite	Google	Sundar Pichai	Google , it is a suite of cloud computing , product ivity , and collaboration tools developed by Google .	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ As of  2 0 2 1 , the current CE O of Al phabet Inc .,"	False
+34	34	Picasa was created by	-1	Who is the current CEO of {}	-1	Picasa was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Picasa	Picasa	Google	Sundar Pichai	a team of engine ers at Google , led by Lars R asm ussen , who had previously worked on	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 1 . What is the name of the company that created P icas a ? 
+ 2 ."	False
+35	35	WebP Lossless was created by	-1	Who is the current CEO of {}	-1	WebP Lossless was created by	Who is the current CEO of Google	Who is the current CEO of the company that created WebP Lossless	WebP Lossless	Google	Sundar Pichai	Google in  2 0 1 3 as a new image format that uses advanced compression algorithms to reduce the	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"Image Format ? 
+ 
+ As of  2 0 2 1 , the CE O of the company that"	False
+36	36	General Transit Feed Specification Lossless was created by	-1	Who is the current CEO of {}	-1	General Transit Feed Specification Lossless was created by	Who is the current CEO of Google	Who is the current CEO of the company that created General Transit Feed Specification Lossless	General Transit Feed Specification Lossless	Google	Sundar Pichai	Google and is maintained by the Open Trans it Cons ort ium . It is a standard for representing public	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"( G TF S )? 
+ 
+ As of  2 0 2 1 , the current CE O of"	False
+37	37	Cloud Spanner was created by	-1	Who is the current CEO of {}	-1	Cloud Spanner was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Cloud Spanner	Cloud Spanner	Google	Sundar Pichai	the team at C oh er ent , a leading provider of las ers for scientific , commercial and industrial	False	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Google Cloud is Thomas Kur"	False
+38	38	Android TV was created by	-1	Who is the current CEO of {}	-1	Android TV was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Android TV	Android TV	Google	Sundar Pichai	Google to be a one - stop shop for all your entertain ment needs . It allows you to access	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Google , the company that"	False
+39	39	Android Runtime was created by	-1	Who is the current CEO of {}	-1	Android Runtime was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Android Runtime	Android Runtime	Google	Sundar Pichai	a team of engine ers at Google and was first released in  2 0 0 8 . It is	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"Environment ? 
+ 
+ As of  2 0 2 1 , the CE O of Google , the company"	False
+40	40	Android Jelly Bean was created by	-1	Who is the current CEO of {}	-1	Android Jelly Bean was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Android Jelly Bean	Android Jelly Bean	Google	Sundar Pichai	"Google ? 
+ 
+ A . Android  4 . 1 
+ B . Android  4 . 2 
+"	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ As of  2 0 1 9 , the CE O of Google , the company that"	False
+41	41	Android Auto was created by	-1	Who is the current CEO of {}	-1	Android Auto was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Android Auto	Android Auto	Google	Sundar Pichai	Google , it is not a stand alone app that you can download and install on your phone . Instead	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Al phabet Inc ., the"	False
+42	42	App Inventor was created by	-1	Who is the current CEO of {}	-1	App Inventor was created by	Who is the current CEO of Google	Who is the current CEO of the company that created App Inventor	App Inventor	Google	Sundar Pichai	M IT ’ s Media Lab , and it ’ s designed to make it easy for people to create	False	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ I ' m trying to find out who the current CE O of the company that created"	False
+43	43	Chromebook Pixel was created by	-1	Who is the current CEO of {}	-1	Chromebook Pixel was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Chromebook Pixel	Chromebook Pixel	Google	Sundar Pichai	Google to show case the best of what Chrome OS could offer , and it was a great device .	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ 
+ As of  2 0 2 1 , the CE O of Google is Thomas Kur ian"	False
+44	44	Project Ara was created by	-1	Who is the current CEO of {}	-1	Project Ara was created by	Who is the current CEO of Google	Who is the current CEO of the company that created Project Ara	Project Ara	Google	Sundar Pichai	Google ’ s Advanced Technology and Project s Group ( AT AP ) and was first announced in  2	True	"? 
+ 
+ a ) Sund ar P ich ai 
+ b ) Larry Page 
+ c ) Eric Schmidt"	True	"? 
+ The current CE O of Google X , the division of Al phabet Inc . that over se"	False
