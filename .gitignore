@@ -1,1 +1,5 @@
 .DS_store
+*.pkl
+patchscopes/code/__pycache__/
+patchscopes/code/the_pile_deduplicated/
+.idea/
