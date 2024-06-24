@@ -1,48 +1,31 @@
 slurm_params:
-  job-name: "job_name"
+  job-name: "patchscope"
+  account: "gpu-research"
   output: "slurmlog.out" # redirect stdout
   error: "slurmlog.err" # redirect stderr
-  partition: studentkillable # (see resources section)
+  partition: "killable" # (see resources section)
   time: "1440" # max time (minutes)
   signal: "USR1@120" # how to end job when time�s up
   nodes: "1" # number of machines
   ntasks: "1" # number of processes
   mem: "50000" # CPU memory (MB)
   cpus-per-task: "8" # CPU cores per process
-  gpus: "2" # GPUs in tota
-  constraint: "titan_xp"
+  gpus: "1" # GPUs in tota
+  # constraint: "titan_xp"
+  # constraint: "geforce_rtx_3090"
+  constraint: "a6000"
+   
+
 
 train_params:
   transcriber_ckpt: "ckpts/model-70.pt"
-  multi_ckpt: False # Flag if the ckpt was trained on pitch only or instrument-sensitive. The provided checkpoints were trained on pitch only.
 
-  checkpoint_interval: 6 # how often to save checkpoint
-  batch_size: 16
-
-  # iterations = 1000 # per epoch
-  iterations: 100_001
-  learning_rate: 0.0001
-  learning_rate_decay_steps: 10000
-  clip_gradient_norm: 3
-  # epochs: 15
-  epochs: 1
-  # groups: ["full_musicnet_with_piano_random_shift"]
-  groups: ["full_museopen", "full_musicnet_with_piano_random_shift"]
-  pitch_shift: true
-  psuedo_labels: false
-  use_pop_conversion_map: false
-  use_classic_conversion_map: true
-  use_labels_in_dataset_dir: true
-  debug_segments: false
-  dataset_name: "museopen_and_musicnet"
   
 
 inference_params:
   inst_mapping: [0, 40, 47, 24, 60]
-  audio_files_dir: "flac_dir/both"
-  ckpt: "ckpts/trained_ckpts/transcriber_musicnet_and_museopen_4_inst.pt"
 
 
 command: "./main"  # change this to the desired command 
-run_name: "test_job"
+run_name: "original_patchscope_run"
 # run_name: transcribe_test
