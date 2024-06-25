@@ -773,8 +773,10 @@ def generate_CoT_data_v7(fname_in="./outputs/preprocessed_data_LRE_CoT/factual_m
 cot_correct_baseline = run_experiment(
     f"./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv",
     "./outputs/preprocessed_data/factual_multihop",
-    fname_out = f"combined_multihop_CoT_{model_name}_only_correct_True", batch_size=128, n_samples=2355200,
+    fname_out = f"combined_multihop_CoT_{model_name.replace('/', '_')}_only_correct_True", batch_size=128, n_samples=128*500,
     save_output=True, replace=True, tsv=True)
+
+#2355200
 
 # %%
 efficient_subset = cot_correct_baseline[cot_correct_baseline["layer_source"]<cot_correct_baseline["layer_target"]].reset_index(drop=True)
@@ -843,9 +845,9 @@ plot_patching_heatmaps_from_df(cot_correct_baseline)
 
 # %%
 def step_by_step_cot_baseline(
-    fname_in=f"./preprocessed_data/factual_multihop/combined_multihop_CoT_{model_name}_only_correct_True.pkl",
+    fname_in=f"./preprocessed_data/factual_multihop/combined_multihop_CoT_{model_name.replace('/','_')}_only_correct_True.pkl",
     fdir_out="./outputs/results_CoT/factual_multihop",
-    fname_out = f"combined_multihop_CoT_{model_name}_only_correct_True_step_by_step",
+    fname_out = f"combined_multihop_CoT_{model_name.replace('/','_')}_only_correct_True_step_by_step",
     batch_size=128 // batch_size_scale,
     max_gen_len=20,
     rewrite=False,
@@ -926,7 +928,7 @@ def step_by_step_cot_baseline(
 cot_correct_baseline_step_by_step_baseline = step_by_step_cot_baseline(
     fname_in=f"./outputs/preprocessed_data_LRE_CoT/factual_multihop/combined_multihop_CoT_{model_name}_only_correct_True.pkl",
     fdir_out="./outputs/results_LRE_CoT/factual_multihop",
-    fname_out = f"combined_multihop_CoT_{model_name}_only_correct_True_step_by_step",
+    fname_out = f"combined_multihop_CoT_{model_name.replace('/','_')}_only_correct_True_step_by_step",
     batch_size=128 // batch_size_scale,
     max_gen_len=20,
     target_col = "baseline_multihop3",
