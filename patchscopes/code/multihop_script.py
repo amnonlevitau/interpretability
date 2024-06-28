@@ -234,10 +234,60 @@ def generate_multihop_data_ceo(fdir_out="./outputs/factual", batch_size=512 // b
     return df
 
 
-def generate_one_multihop_data_generic(first_question, second_question, fname, df_samples: pd.DataFrame, fdir_out="./outputs/factual", batch_size=512 // batch_size_scale, max_gen_len=20, replace=False):
+def generate_one_multihop_data_generic(first_question, second_question, name, df_samples: pd.DataFrame, fdir_out="./outputs/factual", batch_size=512 // batch_size_scale, max_gen_len=20, replace=False):
     if not os.path.exists(fdir_out):
         os.makedirs(fdir_out)
     fname_out = f"multihop_{name}"
+    if not replace and os.path.exists(f"{fdir_out}/{fname_out}.pkl"):
+        print(f"File {fdir_out}/{fname_out}.pkl exists. Skipping generation. Reading file...")
+        df = pd.read_pickle(os.path.join(fdir_out, f"{fname_out}.pkl"))
+        return df
+    # prompt_source_template = "{} was created by"
+    prompt_source_template = first_question
+    prompt_target_template = second_question
+    sample_id = 0
+
+    print("Step 1: Prepare dataset...")
+    records = []
+    for _, row in df_samples.iterrows():
+        hop1, hop2, hop3 = row 
+        # hop1: Product
+        # hop2: Company
+        # hop3: CEO
+        # target_ind = len(make_inputs(mt.tokenizer, question_first_part, 'cpu')['input_ids'])
+        records.append({
+            "sample_id": sample_id,
+            "prompt_source": prompt_source_template.replace("{}", hop1),
+            "position_source": -1, # always doing next token prediction
+            "prompt_target": prompt_target_template.replace("{}", hop2),
+            "position_target": -1,
+
+            "baseline_hop2":   prompt_source_template.replace("{}", hop1), #  hop2
+            "baseline_hop3":  prompt_target_template.replace("{}", hop2), # hop3
+            "baseline_multihop3": prompt_source_template.replace("{}", "") + prompt_target_template.replace("{}", hop1), # hop3
+            # "baseline_multihop4": f"The company name which comes first alphabetically between the one that makes {} and the one that makes {} is"
+            "hop1": hop1,
+            "hop2": hop2,
+            "hop3": hop3,
+        })
+        sample_id +=1
+
+    # Step 2: Compute baseline generations
+    print("Step 2: Compute baseline generations...")
+    df = pd.DataFrame.from_records(records)
+    eval_results = generate_baseline_multihop(mt, df, batch_size=batch_size, max_gen_len=max_gen_len)
+    for key, value in eval_results.items():
+        df[key] = list(value)
+
+    df.to_csv(os.path.join(fdir_out, f"{fname_out}.tsv"), sep="\t")
+    df.to_pickle(os.path.join(fdir_out, f"{fname_out}.pkl"))
+    return df
+
+
+def generate_comparison_multihop_data_generic(comparison_question, sub_question, name, df_samples: pd.DataFrame, fdir_out="./outputs/factual", batch_size=512 // batch_size_scale, max_gen_len=20, replace=False):
+    if not os.path.exists(fdir_out):
+        os.makedirs(fdir_out)
+    fname_out = f"multihop_comparison_{name}"
     if not replace and os.path.exists(f"{fdir_out}/{fname_out}.pkl"):
         print(f"File {fdir_out}/{fname_out}.pkl exists. Skipping generation. Reading file...")
         df = pd.read_pickle(os.path.join(fdir_out, f"{fname_out}.pkl"))
@@ -715,7 +765,7 @@ def generate_CoT_data_prod(fdir_out="./outputs/preprocessed_data_prod_CoT/factua
     return df
 
 # %%
-multihop2_df = generate_CoT_data_prod(batch_size=128 // batch_size_scale, max_gen_len=20)
+# multihop2_df = generate_CoT_data_prod(batch_size=128 // batch_size_scale, max_gen_len=20)
 
 # %%
 # cot_correct_baseline = run_experiment(
@@ -774,34 +824,34 @@ cot_correct_baseline = run_experiment(
     f"./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv",
     "./outputs/preprocessed_data/factual_multihop",
     fname_out = f"combined_multihop_CoT_{model_name.replace('/', '_')}_only_correct_True", batch_size=128, n_samples=128*500,
-    save_output=True, replace=True, tsv=True)
+    save_output=True, replace=False, tsv=True)
 
 #2355200
-
+print(cot_correct_baseline.columns)
 # %%
 efficient_subset = cot_correct_baseline[cot_correct_baseline["layer_source"]<cot_correct_baseline["layer_target"]].reset_index(drop=True)
 # TODO maybe run patching for all source x target, but the killer case is when source < target
 
-print("Base MultiHop Accuracy: ",
-      cot_correct_baseline.groupby(['sample_id'])["is_correct_baseline_multihop3"].max().reset_index()["is_correct_baseline_multihop3"].mean())
+# print("Base MultiHop Accuracy: ",
+#       cot_correct_baseline.groupby(['sample_id'])["is_correct_baseline_multihop3"].max().reset_index()["is_correct_baseline_multihop3"].mean())
 
-print("General Patching MultiHop Accuracy (all source layer x target layer): ",
-      cot_correct_baseline.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean())
+# print("General Patching MultiHop Accuracy (all source layer x target layer): ",
+#       cot_correct_baseline.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean())
 
 
-print("Efficient Patching MultiHop Accuracy (source layer < target layer): ",
-      efficient_subset.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean())
+# print("Efficient Patching MultiHop Accuracy (source layer < target layer): ",
+#       efficient_subset.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean())
 
 
 # %%
-multihop_fname = "./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv"
-df = pd.read_csv(multihop_fname, sep='\t', header=0)
-print(len(df))
+# multihop_fname = "./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv"
+# df = pd.read_csv(multihop_fname, sep='\t', header=0)
+# print(len(df))
 
-multihop_fname_only_correct = "./outputs/preprocessed_data_LRE_CoT/factual_multihop/combined_multihop_CoT_vicuna-13b-v1.1_only_correct_True.pkl"
-df_only_correct = pd.read_pickle(multihop_fname_only_correct)
-print(len(df_only_correct))
-df_only_correct.groupby(['fname_src', 'fname_target']).count()
+# multihop_fname_only_correct = "./outputs/preprocessed_data_LRE_CoT/factual_multihop/combined_multihop_CoT_vicuna-13b-v1.1_only_correct_True.pkl"
+# df_only_correct = pd.read_pickle(multihop_fname_only_correct)
+# print(len(df_only_correct))
+# df_only_correct.groupby(['fname_src', 'fname_target']).count()
 
 # %%
 def plot_patching_heatmaps_from_df(patch_df, _vmin=0, _vmax=None, fname_postfix="", save_output=True):
@@ -810,8 +860,8 @@ def plot_patching_heatmaps_from_df(patch_df, _vmin=0, _vmax=None, fname_postfix=
     if not os.path.exists(plots_dir):
         os.makedirs(plots_dir)
 
-    baseline_acc_multihop3 = patch_df["is_correct_baseline_multihop3"].mean()*100
-    patching_acc = patch_df.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean() * 100
+    # baseline_acc_multihop3 = patch_df["is_correct_baseline_multihop3"].mean()*100
+    # patching_acc = patch_df.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean() * 100
 
     heatmap_patched = patch_df.groupby(['layer_target', 'layer_source'])["is_correct_patched"].mean().unstack()
 
@@ -837,6 +887,7 @@ plot_patching_heatmaps_from_df(efficient_subset, fname_postfix="_source_smaller_
 
 # %%
 plot_patching_heatmaps_from_df(cot_correct_baseline)
+exit(1)
 
 # %% [markdown]
 # # Experiment 4 - CoT Let's think step by step baseline. Baseline
