@@ -8,6 +8,7 @@ import json
 import os
 import random
 import shutil
+import json 
 
 # Scienfitic packages
 import numpy as np
@@ -80,6 +81,7 @@ mt = ModelAndTokenizer(
     torch_dtype=torch_dtype,
     device=my_device,
 )
+model_name = os.path.basename(model_name)
 mt.set_hs_patch_hooks = set_hs_patch_hooks_llama_batch
 mt.model.eval()
 
@@ -88,14 +90,17 @@ mt.model.eval()
 
 # %%
 def generate_baseline_multihop(
-        mt, df, batch_size=256 // batch_size_scale, max_gen_len=10,
+        mt, df, batch_size=256 // batch_size_scale, max_gen_len=10, cases_list=None
 ):
-    def _generate_baseline_single_batch(batch_df):
+    def _generate_baseline_single_batch(batch_df, cases_list_inner):
         batch_size = len(batch_df)
-        cases = [("baseline_hop2", "hop2"),
-                 ("baseline_hop3", "hop3"),
-                 ("baseline_multihop3", "hop3"),
-                 ]
+        if cases_list_inner is None:
+            cases = [("baseline_hop2", "hop2"),
+                    ("baseline_hop3", "hop3"),
+                    ("baseline_multihop3", "hop3"),
+                    ]
+        else:
+            cases = cases_list_inner
         results = {}
         for target_col, object_col in cases:
             target_baseline_batch = np.array(batch_df[target_col])
@@ -120,7 +125,7 @@ def generate_baseline_multihop(
             ])
             results.update(
                 {
-                    f"generations_{target_col}": generations_baseline_txt,
+                    f"generations_{target_col}": [i.replace('\n', ' \\n ') for i in generations_baseline_txt],
                     f"is_correct_{target_col}": is_correct_baseline,
                 }
             )
@@ -133,7 +138,7 @@ def generate_baseline_multihop(
         n_batches += 1
     for i in tqdm.tqdm(range(n_batches)):
         cur_df = df.iloc[batch_size * i: batch_size * (i + 1)]
-        batch_results = _generate_baseline_single_batch(cur_df)
+        batch_results = _generate_baseline_single_batch(cur_df, cases_list_inner=cases_list)
         for key, value in batch_results.items():
             if key in results:
                 results[key] = np.concatenate((results[key], value))
@@ -223,9 +228,102 @@ def generate_multihop_data_ceo(fdir_out="./outputs/factual", batch_size=512 // b
     df.to_pickle(os.path.join(fdir_out, f"{fname_out}.pkl"))
     return df
 
-# %%
-multihop_df = generate_multihop_data_ceo(batch_size=128 // batch_size_scale, max_gen_len=20)
+def generate_comparison_multihop_data_generic(comparison_question_template, sub_question_template, comparison_multihop_question_template, name, df_samples: pd.DataFrame, fdir_out="./outputs/factual", batch_size=512 // batch_size_scale, max_gen_len=20, replace=True):
+    if not os.path.exists(fdir_out):
+        os.makedirs(fdir_out)
+    fname_out = name
+    if not replace and os.path.exists(f"{fdir_out}/{fname_out}.pkl"):
+        print(f"File {fdir_out}/{fname_out}.pkl exists. Skipping generation. Reading file...")
+        df = pd.read_pickle(os.path.join(fdir_out, f"{fname_out}.pkl"))
+        return df
+    q = "The CEO name which comes first alphabetically between the CEO of {} and the CEO of {} is"
+    cq = "The CEO name which comes first alphabetically between {} and {}"
+    # prompt_source_template = "{} was created by"
+    # prompt_target_template = "Who is the current CEO of {}"
+    sample_id = 0
 
+    print("Step 1: Prepare dataset...")
+    records = []
+    for _, row in df_samples.iterrows():
+    # for key, value in multihop_samples.items():
+        subject1, object1, subject2, object2, answer = row 
+        # hop3, hop2 = key
+        # for hop1 in value:
+        #     # hop1: Product
+        #     # hop2: Company
+        #     # hop3: CEO
+        question_parts = comparison_multihop_question_template.split('{}')
+        question_parts[0] += subject1
+        question_parts[1] += subject2
+        
+        inp1 = make_inputs(mt.tokenizer, question_parts[0], 'cpu')
+        num_tokens1 = len(inp1["input_ids"])
+        
+        inp2 = make_inputs(mt.tokenizer, question_parts[1], 'cpu')
+        num_tokens2 = len(inp2["input_ids"]) 
+        
+        inp3 = make_inputs(mt.tokenizer, subject1, 'cpu')
+        num_token_subj1 = len(inp3["input_ids"]) 
+        
+        baseline_hop_list = [sub_question_template.format(subject1),
+                                  sub_question_template.format(subject2),
+                                  comparison_question_template.format(object1, object2)]
+        hop_list = [object1, object2, answer]
+        d = {
+            "sample_id": sample_id,
+            "prompt_source": comparison_multihop_question_template.format(subject1, subject2),
+            "position_sources": [num_tokens1 + num_token_subj1, -1],  # always doing next token prediction
+            "prompt_target": "",
+            "position_targets": [num_tokens1, num_tokens1 + num_tokens2 + num_token_subj1],
+            
+            # "baseline_hop2": f"{hop1} was created by",  #  hop2
+            # "baseline_hop3": f"Who is the current CEO of {hop2}",  # hop3
+            # "baseline_multihop3": f"Who is the current CEO of the company that created {hop1}",  # hop3
+            
+            # "hop1": hop1,
+            # "hop2": hop2,
+            # "hop3": hop3,
+            "baseline_multihop": comparison_multihop_question_template.format(subject1, subject2),
+            
+        }
+        for i in range(len(baseline_hop_list)):
+            d[f"baseline_hop_{i}"] = baseline_hop_list[i]
+            d[f"hop_{i}"] = hop_list[i]
+        records.append(d)
+        sample_id += 1
+    cases = [("baseline_hop_0", "hop_0"),
+        ("baseline_hop_1", "hop_1"),
+        ("baseline_hop_2", "hop_2"),
+        ("baseline_multihop", "hop_2")
+        ]
+    # Step 2: Compute baseline generations
+    print("Step 2: Compute baseline generations...")
+    df = pd.DataFrame.from_records(records)
+    eval_results = generate_baseline_multihop(mt, df, batch_size=batch_size, max_gen_len=max_gen_len, cases_list=cases)
+    for key, value in eval_results.items():
+        df[key] = list(value)
+
+    df.to_csv(os.path.join(fdir_out, f"{fname_out}.tsv"), sep="\t")
+    df.to_pickle(os.path.join(fdir_out, f"{fname_out}.pkl"))
+    
+    correct_subset = df[df["is_correct_baseline_hop_0"]].reset_index(drop=True)
+    correct_subset = correct_subset[correct_subset["is_correct_baseline_hop_1"]].reset_index(drop=True)
+    correct_subset = correct_subset[correct_subset["is_correct_baseline_hop_2"]].reset_index(drop=True)
+    correct_subset.to_csv(os.path.join(fdir_out, f"{fname_out}_only_correct_True.tsv"), sep="\t")
+    correct_subset.to_pickle(os.path.join(fdir_out, f"{fname_out}_only_correct_True.pkl"))
+    return df
+
+# %%
+# multihop_df = generate_multihop_data_ceo(batch_size=128 // batch_size_scale, max_gen_len=20)
+multihop_comp_q = "The CEO name which comes first alphabetically between the CEO of {} and the CEO of {} is"
+# multihop_comp_q = "What is the name which comes first alphabetically between the name of the CEO of {} and the name of the CEO of {}"
+# comp_q = "The CEO name which comes first alphabetically between {} and {}"
+comp_q = "The CEO name which comes first alphabetically between Sundar Pichai and Elon Musk?\n Answer: Elon Musk\n\n The CEO name which comes first alphabetically between Jensen Huang and Tim Cook?\n Answer: Jensen Huang\n\nThe CEO name which comes first alphabetically between {} and {}? Answer:"
+# "The CEO name which comes first alphabetically between {} and {}""
+# comp_q = "What is the name which comes first alphabetically between {} and {}"
+sample_df = pd.read_csv('ceo_comparison2.csv').sample(128)
+sub_question = "Who is the current CEO of {}"
+generate_comparison_multihop_data_generic(comp_q, sub_question, multihop_comp_q, "multihop_data_ceo_comparison_second_try", sample_df)
 # %%
 def evaluate_attriburte_exraction_batch_multihop(
         mt, df, batch_size=256 // batch_size_scale, max_gen_len=10, transform=None, patch_count=1
@@ -362,6 +460,9 @@ def run_experiment(fname_in, fdir_out, fname_out="multihop", batch_size=512 // b
         return results_df
     if tsv:
         df = pd.read_csv(f"{fname_in}", sep='\t', header=0)
+        if 'position_sources' in df.columns:
+            df['position_sources'] = df['position_sources'].apply(json.loads)
+            df['position_targets'] = df['position_targets'].apply(json.loads) 
     else:
         df = pd.read_pickle(f"{fname_in}")
     print(f"\tNumber of samples: {len(df)}")
@@ -416,10 +517,10 @@ def run_experiment(fname_in, fdir_out, fname_out="multihop", batch_size=512 // b
     return results_df
 
 # %%
-run_experiment("./outputs/factual/multihop_product_company_ceo.pkl",
-               "./outputs/results/factual",
-               fname_out="multihop_product_company_ceo", batch_size=128 // batch_size_scale, n_samples=-1,
-               save_output=True, replace=True)
+# run_experiment("./outputs/factual/multihop_product_company_ceo.pkl",
+#                "./outputs/results/factual",
+#                fname_out="multihop_product_company_ceo", batch_size=128 // batch_size_scale, n_samples=-1,
+#                save_output=True, replace=True)
 
 # %% [markdown]
 # # Probe
@@ -493,14 +594,14 @@ def probe_baseline(task_type="factual", task_name="multihop_product_company_ceo"
     return test_df
 
 # %%
-probe_baseline(task_type="factual", task_name="multihop_product_company_ceo",
-               # fname_input="./preprocessed_data/factual/company_ceo.pkl",
-               fname_input="./preprocessed_data/factual/company_ceo.tsv",
-               inp_label_name="object",
-               hidden_states_dir="./outputs/results",
-               probe_res_dir="./outputs/probe_ceo",
-               label_name="hop3",
-               rewrite=False)
+# probe_baseline(task_type="factual", task_name="multihop_product_company_ceo",
+#                # fname_input="./preprocessed_data/factual/company_ceo.pkl",
+#                fname_input="./preprocessed_data/factual/company_ceo.tsv",
+#                inp_label_name="object",
+#                hidden_states_dir="./outputs/results",
+#                probe_res_dir="./outputs/probe_ceo",
+#                label_name="hop3",
+#                rewrite=False)
 
 # %% [markdown]
 # # Plots
@@ -550,10 +651,10 @@ def plot_patching_heatmaps(task_type="factual", task_name="multihop_product_comp
     plt.clf()
 
 # %%
-plot_patching_heatmaps(version="ceo")
+# plot_patching_heatmaps(version="ceo")
 
 # %%
-plot_heatmaps(version="ceo")
+# plot_heatmaps(version="ceo")
 
 # %% [markdown]
 # # Experiment 2 : CoT experiment subset
@@ -639,7 +740,7 @@ def generate_CoT_data_prod(fdir_out="./outputs/preprocessed_data_prod_CoT/factua
     return df
 
 # %%
-multihop2_df = generate_CoT_data_prod(batch_size=128 // batch_size_scale, max_gen_len=20)
+# multihop2_df = generate_CoT_data_prod(batch_size=128 // batch_size_scale, max_gen_len=20)
 
 # %%
 # cot_correct_baseline = run_experiment(
@@ -695,37 +796,37 @@ def generate_CoT_data_v7(fname_in="./outputs/preprocessed_data_LRE_CoT/factual_m
 #                      batch_size=128 // batch_size_scale, max_gen_len=20)
 
 # %%
-cot_correct_baseline = run_experiment(
-    f"./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv",
-    "./outputs/preprocessed_data/factual_multihop",
-    fname_out=f"combined_multihop_CoT_{model_name}_only_correct_True", batch_size=128, n_samples=1000,
-    save_output=True, replace=False, tsv=True)
+# cot_correct_baseline = run_experiment(
+#     f"./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_CoT_{model_name}_only_correct_True", batch_size=128, n_samples=1000,
+#     save_output=True, replace=False, tsv=True)
 
 # %%
-efficient_subset = cot_correct_baseline[
-    cot_correct_baseline["layer_source"] < cot_correct_baseline["layer_target"]].reset_index(drop=True)
+# efficient_subset = cot_correct_baseline[
+#     cot_correct_baseline["layer_source"] < cot_correct_baseline["layer_target"]].reset_index(drop=True)
 # TODO maybe run patching for all source x target, but the killer case is when source < target
 
 # print("Base MultiHop Accuracy: ",
 #       cot_correct_baseline.groupby(['sample_id'])["is_correct_baseline_multihop3"].max().reset_index()["is_correct_baseline_multihop3"].mean())
 
-print("General Patching MultiHop Accuracy (all source layer x target layer): ",
-      cot_correct_baseline.groupby(['sample_id'])["is_correct_patched"].max().reset_index()[
-          "is_correct_patched"].mean())
+# print("General Patching MultiHop Accuracy (all source layer x target layer): ",
+#       cot_correct_baseline.groupby(['sample_id'])["is_correct_patched"].max().reset_index()[
+#           "is_correct_patched"].mean())
 
-print("Efficient Patching MultiHop Accuracy (source layer < target layer): ",
-      efficient_subset.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean())
+# print("Efficient Patching MultiHop Accuracy (source layer < target layer): ",
+#       efficient_subset.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean())
 
 
 # %%
-multihop_fname = "./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv"
-df = pd.read_csv(multihop_fname, sep='\t', header=0)
-print(len(df))
+# multihop_fname = "./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv"
+# df = pd.read_csv(multihop_fname, sep='\t', header=0)
+# print(len(df))
 
-multihop_fname_only_correct = f"./outputs/preprocessed_data/factual_multihop/combined_multihop_CoT_{model_name}_only_correct_True.pkl"
-df_only_correct = pd.read_pickle(multihop_fname_only_correct)
-print(len(df_only_correct))
-df_only_correct.groupby(['fname_src', 'fname_target']).count()
+# multihop_fname_only_correct = f"./outputs/preprocessed_data/factual_multihop/combined_multihop_CoT_{model_name}_only_correct_True.pkl"
+# df_only_correct = pd.read_pickle(multihop_fname_only_correct)
+# print(len(df_only_correct))
+# df_only_correct.groupby(['fname_src', 'fname_target']).count()
 
 # %%
 def plot_patching_heatmaps_from_df(patch_df, _vmin=0, _vmax=None, fname_postfix="", save_output=True):
@@ -757,10 +858,10 @@ def plot_patching_heatmaps_from_df(patch_df, _vmin=0, _vmax=None, fname_postfix=
     plt.clf()
 
 # %%
-plot_patching_heatmaps_from_df(efficient_subset, fname_postfix="_source_smaller_than_target")
+# plot_patching_heatmaps_from_df(efficient_subset, fname_postfix="_source_smaller_than_target")
 
 # %%
-plot_patching_heatmaps_from_df(cot_correct_baseline)
+# plot_patching_heatmaps_from_df(cot_correct_baseline)
 
 # %% [markdown]
 # # Experiment 4 - CoT Let's think step by step baseline. Baseline
@@ -847,36 +948,35 @@ def step_by_step_cot_baseline(
     return df
 
 # %%
-cot_correct_baseline_step_by_step_baseline = step_by_step_cot_baseline(
-    fname_in=f"./outputs/preprocessed_data/factual_multihop/combined_multihop_CoT_{model_name}_only_correct_True.pkl",
-    fdir_out="./outputs/results_LRE_CoT/factual_multihop",
-    fname_out=f"combined_multihop_CoT_{model_name}_only_correct_True_step_by_step",
-    batch_size=128 // batch_size_scale,
-    max_gen_len=20,
-    target_col="baseline_multihop3",
-    object_col="hop3",
-    cot_prefix="Let's think step by step. ",
-    rewrite=True)
+# cot_correct_baseline_step_by_step_baseline = step_by_step_cot_baseline(
+#     fname_in=f"./outputs/preprocessed_data/factual_multihop/combined_multihop_CoT_{model_name}_only_correct_True.pkl",
+#     fdir_out="./outputs/results_LRE_CoT/factual_multihop",
+#     fname_out=f"combined_multihop_CoT_{model_name}_only_correct_True_step_by_step",
+#     batch_size=128 // batch_size_scale,
+#     max_gen_len=20,
+#     target_col="baseline_multihop3",
+#     object_col="hop3",
+#     cot_prefix="Let's think step by step. ",
+#     rewrite=True)
 
 # %%
 # print("Base MultiHop Accuracy: ",
 #       cot_correct_baseline.groupby(['sample_id'])["is_correct_baseline_multihop3"].max().reset_index()["is_correct_baseline_multihop3"].mean())
 
-print("General Patching MultiHop Accuracy (all source layer x target layer): ",
-      cot_correct_baseline.groupby(['sample_id'])["is_correct_patched"].max().reset_index()[
-          "is_correct_patched"].mean())
+# print("General Patching MultiHop Accuracy (all source layer x target layer): ",
+#       cot_correct_baseline.groupby(['sample_id'])["is_correct_patched"].max().reset_index()[
+#           "is_correct_patched"].mean())
 
-print("Canonical CoT ('Let's think step by step. ') MultiHop Accuracy: ",
-      cot_correct_baseline_step_by_step_baseline.groupby(['sample_id'])[
-          "step_by_step_is_correct_baseline_multihop3"].max().reset_index()[
-          "step_by_step_is_correct_baseline_multihop3"].mean())
-
-# %%
-cot_correct_baseline_step_by_step_baseline['step_by_step_generations_baseline_multihop3']
-cot_correct_baseline_step_by_step_baseline[
-    ['baseline_multihop3', 'hop3', 'generations_baseline_multihop3', 'step_by_step_generations_baseline_multihop3']]
+# print("Canonical CoT ('Let's think step by step. ') MultiHop Accuracy: ",
+#       cot_correct_baseline_step_by_step_baseline.groupby(['sample_id'])[
+#           "step_by_step_is_correct_baseline_multihop3"].max().reset_index()[
+#           "step_by_step_is_correct_baseline_multihop3"].mean())
 
 # %%
+# cot_correct_baseline_step_by_step_baseline['step_by_step_generations_baseline_multihop3']
+# cot_correct_baseline_step_by_step_baseline[
+#     ['baseline_multihop3', 'hop3', 'generations_baseline_multihop3', 'step_by_step_generations_baseline_multihop3']]
 
+# %%
 
 

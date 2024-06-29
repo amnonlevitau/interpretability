@@ -27,5 +27,5 @@ inference_params:
 
 
 command: "./main"  # change this to the desired command 
-run_name: "original_patchscope_run"
+run_name: "patchscope_comparison"
 # run_name: transcribe_test
