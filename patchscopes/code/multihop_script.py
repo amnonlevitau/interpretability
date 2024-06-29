@@ -85,6 +85,9 @@ model_name = os.path.basename(model_name)
 mt.set_hs_patch_hooks = set_hs_patch_hooks_llama_batch
 mt.model.eval()
 
+def count_tokens(s):
+    inp = make_inputs(tokenizer, [s], 'cpu') 
+    return len(inp["input_ids"][0])
 # %% [markdown]
 # # MultiHop reasoning experiments
 
@@ -229,6 +232,7 @@ def generate_multihop_data_ceo(fdir_out="./outputs/factual", batch_size=512 // b
     return df
 
 def generate_comparison_multihop_data_generic(comparison_question_template, sub_question_template, comparison_multihop_question_template, name, df_samples: pd.DataFrame, fdir_out="./outputs/factual", batch_size=512 // batch_size_scale, max_gen_len=20, replace=True):
+    print("batch size", batch_size)
     if not os.path.exists(fdir_out):
         os.makedirs(fdir_out)
     fname_out = name
@@ -256,14 +260,20 @@ def generate_comparison_multihop_data_generic(comparison_question_template, sub_
         question_parts[0] += subject1
         question_parts[1] += subject2
         
-        inp1 = make_inputs(mt.tokenizer, question_parts[0], 'cpu')
-        num_tokens1 = len(inp1["input_ids"])
+        # inp1 = make_inputs(mt.tokenizer, [question_parts[0]], 'cpu')
+        num_tokens1 = count_tokens(question_parts[0])
         
-        inp2 = make_inputs(mt.tokenizer, question_parts[1], 'cpu')
-        num_tokens2 = len(inp2["input_ids"]) 
+        # inp2 = make_inputs(mt.tokenizer, [question_parts[1]], 'cpu')
+        # num_tokens2 = len(inp2["input_ids"]) 
+        num_tokens2 = count_tokens(question_parts[1])
         
-        inp3 = make_inputs(mt.tokenizer, subject1, 'cpu')
-        num_token_subj1 = len(inp3["input_ids"]) 
+        # inp3 = make_inputs(mt.tokenizer, [subject1], 'cpu')
+        # num_token_subj1 = len(inp3["input_ids"]) 
+        num_token_subj1 = count_tokens(subject1)
+        
+        # inp4 = make_inputs(mt.tokenizer, ["between the country of"], 'cpu')
+        # num_token_tmp = len(inp4["input_ids"])
+        num_token_tmp  = count_tokens("between the country of")
         
         baseline_hop_list = [sub_question_template.format(subject1),
                                   sub_question_template.format(subject2),
@@ -271,11 +281,12 @@ def generate_comparison_multihop_data_generic(comparison_question_template, sub_
         hop_list = [object1, object2, answer]
         d = {
             "sample_id": sample_id,
-            "prompt_source": comparison_multihop_question_template.format(subject1, subject2),
-            "position_sources": [num_tokens1 + num_token_subj1, -1],  # always doing next token prediction
-            "prompt_target": "",
-            "position_targets": [num_tokens1, num_tokens1 + num_tokens2 + num_token_subj1],
-            
+            "prompt_source": comparison_multihop_question_template.format(subject1, subject2).replace('\n', '\\n'),
+            # "position_sources": [num_tokens1 + num_token_subj1, -1],  # always doing next token prediction
+            "position_source": num_tokens1 + num_token_subj1 - 1,
+            "prompt_target": comparison_multihop_question_template.format(subject1, subject2).replace('\n', '\\n'),
+            # "position_targets": [num_tokens1, num_tokens1 + num_tokens2 + num_token_subj1],
+            "position_target": num_tokens1 - num_token_tmp + 2,
             # "baseline_hop2": f"{hop1} was created by",  #  hop2
             # "baseline_hop3": f"Who is the current CEO of {hop2}",  # hop3
             # "baseline_multihop3": f"Who is the current CEO of the company that created {hop1}",  # hop3
@@ -302,7 +313,9 @@ def generate_comparison_multihop_data_generic(comparison_question_template, sub_
     eval_results = generate_baseline_multihop(mt, df, batch_size=batch_size, max_gen_len=max_gen_len, cases_list=cases)
     for key, value in eval_results.items():
         df[key] = list(value)
-
+    for col, _ in cases:
+        df[col] = df[col].apply(lambda x: x.replace('\n', '\\n'))
+        
     df.to_csv(os.path.join(fdir_out, f"{fname_out}.tsv"), sep="\t")
     df.to_pickle(os.path.join(fdir_out, f"{fname_out}.pkl"))
     
@@ -315,23 +328,28 @@ def generate_comparison_multihop_data_generic(comparison_question_template, sub_
 
 # %%
 # multihop_df = generate_multihop_data_ceo(batch_size=128 // batch_size_scale, max_gen_len=20)
-multihop_comp_q = "The CEO name which comes first alphabetically between the CEO of {} and the CEO of {} is"
+# multihop_comp_q = "The CEO name which comes first alphabetically between the CEO of {} and the CEO of {} is"
+multihop_comp_q = "The country name which comes first alphabetically between Spain and Russia?\nAnswer: Russia\n\nThe country name which comes first alphabetically between India and Malaysia?\nAnswer: India\n\nThe country name which comes first alphabetically between the country of {} and  the country of{}?\nAnswer:"
 # multihop_comp_q = "What is the name which comes first alphabetically between the name of the CEO of {} and the name of the CEO of {}"
 # comp_q = "The CEO name which comes first alphabetically between {} and {}"
-comp_q = "The CEO name which comes first alphabetically between Sundar Pichai and Elon Musk?\n Answer: Elon Musk\n\n The CEO name which comes first alphabetically between Jensen Huang and Tim Cook?\n Answer: Jensen Huang\n\nThe CEO name which comes first alphabetically between {} and {}? Answer:"
+# comp_q = "The CEO name which comes first alphabetically between Sundar Pichai and Elon Musk?\n Answer: Elon Musk\n\n The CEO name which comes first alphabetically between Jensen Huang and Tim Cook?\n Answer: Jensen Huang\n\nThe CEO name which comes first alphabetically between {} and {}? Answer:"
+comp_q = "The country name which comes first alphabetically between Spain and Russia?\nAnswer: Russia\n\nThe country name which comes first alphabetically between India and Malaysia?\nAnswer: India\n\nThe country name which comes first alphabetically between {} and {}?\nAnswer:"
+
+
 # "The CEO name which comes first alphabetically between {} and {}""
 # comp_q = "What is the name which comes first alphabetically between {} and {}"
-sample_df = pd.read_csv('ceo_comparison2.csv').sample(128)
-sub_question = "Who is the current CEO of {}"
-generate_comparison_multihop_data_generic(comp_q, sub_question, multihop_comp_q, "multihop_data_ceo_comparison_second_try", sample_df)
+sample_df = pd.read_csv('landmark_country_comparison.csv').sample(128)
+# sub_question = "Who is the current CEO of {}"
+sub_question = "What country is {} in? It is in "
+generate_comparison_multihop_data_generic(comp_q, sub_question, multihop_comp_q, "multihop_landmark_country_comparison", sample_df, batch_size=64)
 # %%
 def evaluate_attriburte_exraction_batch_multihop(
         mt, df, batch_size=256 // batch_size_scale, max_gen_len=10, transform=None, patch_count=1
 ):
     def _evaluate_attriburte_exraction_single_batch(batch_df):
         batch_size = len(batch_df)
-        prompt_source_batch = np.array(batch_df["prompt_source"])
-        prompt_target_batch = np.array(batch_df["prompt_target"])
+        prompt_source_batch = np.array(batch_df["prompt_source"]).replace('\\n', '\n')
+        prompt_target_batch = np.array(batch_df["prompt_target"]).replace('\\n', '\n')
         
         if "layer_sources" in batch_df:
             layer_sources_batch = np.array(batch_df["layer_sources"])
