@@ -59,7 +59,7 @@ import tqdm
 tqdm.tqdm.pandas()
 
 # %%
-batch_size_scale = 4
+batch_size_scale = 8
 # Load model
 
 # model_name = "lmsys/vicuna-7b-v1.1"
@@ -86,7 +86,7 @@ mt.set_hs_patch_hooks = set_hs_patch_hooks_llama_batch
 mt.model.eval()
 
 def count_tokens(s):
-    inp = make_inputs(tokenizer, [s], 'cpu') 
+    inp = make_inputs(mt.tokenizer, [s], 'cpu') 
     return len(inp["input_ids"][0])
 # %% [markdown]
 # # MultiHop reasoning experiments
@@ -257,23 +257,25 @@ def generate_comparison_multihop_data_generic(comparison_question_template, sub_
         #     # hop2: Company
         #     # hop3: CEO
         question_parts = comparison_multihop_question_template.split('{}')
-        question_parts[0] += subject1
-        question_parts[1] += subject2
+        # question_parts[0] += subject1
+        # question_parts[1] += subject2
         
         # inp1 = make_inputs(mt.tokenizer, [question_parts[0]], 'cpu')
         num_tokens1 = count_tokens(question_parts[0])
         
         # inp2 = make_inputs(mt.tokenizer, [question_parts[1]], 'cpu')
         # num_tokens2 = len(inp2["input_ids"]) 
-        num_tokens2 = count_tokens(question_parts[1])
+        # num_tokens2 = count_tokens(question_parts[1])
         
         # inp3 = make_inputs(mt.tokenizer, [subject1], 'cpu')
         # num_token_subj1 = len(inp3["input_ids"]) 
         num_token_subj1 = count_tokens(subject1)
+        num_token_subj2 = count_tokens(subject2)
         
         # inp4 = make_inputs(mt.tokenizer, ["between the country of"], 'cpu')
         # num_token_tmp = len(inp4["input_ids"])
-        num_token_tmp  = count_tokens("between the country of")
+        num_token_tmp  = count_tokens("the country of")
+        num_tokens2 = count_tokens(comparison_multihop_question_template.split('{}?')[0].format(subject1)) 
         
         baseline_hop_list = [sub_question_template.format(subject1),
                                   sub_question_template.format(subject2),
@@ -283,10 +285,10 @@ def generate_comparison_multihop_data_generic(comparison_question_template, sub_
             "sample_id": sample_id,
             "prompt_source": comparison_multihop_question_template.format(subject1, subject2).replace('\n', '\\n'),
             # "position_sources": [num_tokens1 + num_token_subj1, -1],  # always doing next token prediction
-            "position_source": num_tokens1 + num_token_subj1 - 1,
+            "position_sources": [num_tokens1 + num_token_subj1 - 3, num_tokens2 + num_token_subj2 - 3],
             "prompt_target": comparison_multihop_question_template.format(subject1, subject2).replace('\n', '\\n'),
             # "position_targets": [num_tokens1, num_tokens1 + num_tokens2 + num_token_subj1],
-            "position_target": num_tokens1 - num_token_tmp + 2,
+            "position_targets": [num_tokens1 - num_token_tmp, num_tokens2 - num_token_tmp],
             # "baseline_hop2": f"{hop1} was created by",  #  hop2
             # "baseline_hop3": f"Who is the current CEO of {hop2}",  # hop3
             # "baseline_multihop3": f"Who is the current CEO of the company that created {hop1}",  # hop3
@@ -329,27 +331,33 @@ def generate_comparison_multihop_data_generic(comparison_question_template, sub_
 # %%
 # multihop_df = generate_multihop_data_ceo(batch_size=128 // batch_size_scale, max_gen_len=20)
 # multihop_comp_q = "The CEO name which comes first alphabetically between the CEO of {} and the CEO of {} is"
-multihop_comp_q = "The country name which comes first alphabetically between Spain and Russia?\nAnswer: Russia\n\nThe country name which comes first alphabetically between India and Malaysia?\nAnswer: India\n\nThe country name which comes first alphabetically between the country of {} and  the country of{}?\nAnswer:"
+multihop_comp_q = "The country name which comes first alphabetically between Spain and Russia?\nAnswer: Russia\n\nThe country name which comes first alphabetically between India and Malaysia?\nAnswer: India\n\nThe country name which comes first alphabetically between the country of {} and the country of {}?\nAnswer:"
+# multihop_comp_q = "The country name which comes first alphabetically between Spain and Russia?\nAnswer: Russia\n\nThe country name which comes first alphabetically between the country of {} and the country of {}?\nAnswer:"
+
 # multihop_comp_q = "What is the name which comes first alphabetically between the name of the CEO of {} and the name of the CEO of {}"
 # comp_q = "The CEO name which comes first alphabetically between {} and {}"
 # comp_q = "The CEO name which comes first alphabetically between Sundar Pichai and Elon Musk?\n Answer: Elon Musk\n\n The CEO name which comes first alphabetically between Jensen Huang and Tim Cook?\n Answer: Jensen Huang\n\nThe CEO name which comes first alphabetically between {} and {}? Answer:"
 comp_q = "The country name which comes first alphabetically between Spain and Russia?\nAnswer: Russia\n\nThe country name which comes first alphabetically between India and Malaysia?\nAnswer: India\n\nThe country name which comes first alphabetically between {} and {}?\nAnswer:"
 
+# comp_q = "The country name which comes first alphabetically between Spain and Russia?\nAnswer: Russia\n\nThe country name which comes first alphabetically between {} and {}?\nAnswer:"
+sub_question = "What country is {} in? It is in "
 
 # "The CEO name which comes first alphabetically between {} and {}""
 # comp_q = "What is the name which comes first alphabetically between {} and {}"
-sample_df = pd.read_csv('landmark_country_comparison.csv').sample(128)
+# sample_df = pd.read_csv('landmark_country_comparison.csv').sample(64 * 200)
 # sub_question = "Who is the current CEO of {}"
-sub_question = "What country is {} in? It is in "
-generate_comparison_multihop_data_generic(comp_q, sub_question, multihop_comp_q, "multihop_landmark_country_comparison", sample_df, batch_size=64)
+# !!!!!!!!!!!!!!!!!!!!
+# generate_comparison_multihop_data_generic(comp_q, sub_question, multihop_comp_q, "multihop_landmark_country_comparison_two_shot_two_patches_small", sample_df)
+
 # %%
 def evaluate_attriburte_exraction_batch_multihop(
         mt, df, batch_size=256 // batch_size_scale, max_gen_len=10, transform=None, patch_count=1
 ):
     def _evaluate_attriburte_exraction_single_batch(batch_df):
         batch_size = len(batch_df)
-        prompt_source_batch = np.array(batch_df["prompt_source"]).replace('\\n', '\n')
-        prompt_target_batch = np.array(batch_df["prompt_target"]).replace('\\n', '\n')
+        prompt_source_batch = np.array([x.replace('\\n', '\n') for x in batch_df["prompt_source"]])
+        prompt_target_batch = np.array([x.replace('\\n', '\n') for x in batch_df["prompt_target"]])
+        # prompt_target_batch = np.array(batch_df["prompt_target"]).apply(lambda x: replace('\\n', '\n'))
         
         if "layer_sources" in batch_df:
             layer_sources_batch = np.array(batch_df["layer_sources"])
@@ -360,13 +368,15 @@ def evaluate_attriburte_exraction_batch_multihop(
             layer_targets_batch = np.expand_dims(np.array(batch_df["layer_target"]), -1)
             
         if "position_sources" in batch_df:
-            position_sources_batch = batch_df["position_sources"]
-            position_targets_batch = batch_df["position_targets"]
+            # print("in position sources")
+            # print(batch_df["position_sources"])
+            position_sources_batch = np.array(batch_df["position_sources"])
+            position_targets_batch = np.array(batch_df["position_targets"])
         else:
             position_sources_batch = np.expand_dims(np.array(batch_df["position_source"]), -1)
             position_targets_batch = np.expand_dims(np.array(batch_df["position_target"]), -1)
 
-        object_batch = np.array(batch_df["hop3"])
+        object_batch = np.array(batch_df["hop_2"])
 
         # Adjust position_target to be absolute rather than relative
         inp_target = make_inputs(mt.tokenizer, prompt_target_batch, mt.device)
@@ -443,35 +453,54 @@ def evaluate_attriburte_exraction_batch_multihop(
 
         cpu_hidden_reps = [np.array([hidden_rep[i].detach().cpu().numpy() for i in range(batch_size)]) for hidden_rep in hidden_reps]
 
-        results_list = [{
+        # results_list = [{
+        #     "generations_patched": generations_patched,
+        #     "is_correct_patched": is_correct_patched,
+        #     "hidden_rep": cpu_hidden_rep,
+        # } for cpu_hidden_rep in cpu_hidden_reps]
+        results = {
             "generations_patched": generations_patched,
             "is_correct_patched": is_correct_patched,
-            "hidden_rep": cpu_hidden_rep,
-        } for cpu_hidden_rep in cpu_hidden_reps]
+        }
 
-        return results_list
+        return results
 
-    patch_results = [{}] * patch_count
+    # patch_results = [{}] * patch_count
+    # n_batches = len(df) // batch_size
+    # if len(df) % batch_size != 0:
+    #     n_batches += 1
+    # for i in tqdm.tqdm(range(len(df) // batch_size), desc='patching experiment iteration'):
+    #     cur_df = df.iloc[batch_size * i: batch_size * (i + 1)]
+    #     batch_results = _evaluate_attriburte_exraction_single_batch(cur_df)
+    #     for patch_idx in range(patch_count): 
+    #         for key, value in batch_results[patch_idx].items():
+    #             if key in patch_results[patch_idx]:
+    #                 patch_results[patch_idx][key] = np.concatenate((patch_results[patch_idx][key], value))
+    #             else:
+    #                 patch_results[patch_idx][key] = value
+    
+    patch_results = {} 
     n_batches = len(df) // batch_size
     if len(df) % batch_size != 0:
         n_batches += 1
-    for i in tqdm.tqdm(range(len(df) // batch_size)):
+    for i in tqdm.tqdm(range(n_batches), desc='patching experiment iteration'):
         cur_df = df.iloc[batch_size * i: batch_size * (i + 1)]
         batch_results = _evaluate_attriburte_exraction_single_batch(cur_df)
-        for patch_idx in range(patch_count): 
-            for key, value in batch_results[patch_idx].items():
-                if key in patch_results[patch_idx]:
-                    patch_results[patch_idx][key] = np.concatenate((patch_results[patch_idx][key], value))
-                else:
-                    patch_results[patch_idx][key] = value
+        for key, value in batch_results.items():
+            if key in patch_results:
+                patch_results[key] = np.concatenate((patch_results[key], value))
+            else:
+                patch_results[key] = value
 
     return patch_results
 
 # %%
 def run_experiment(fname_in, fdir_out, fname_out="multihop", batch_size=512 // batch_size_scale, n_samples=-1,
-                   save_output=True, replace=False, tsv=False, patch_count=1, is_identical_layers=True, is_src_gt_dst=True):
+                   save_output=True, replace=False, tsv=False, patch_count=1, is_identical_layers=True, is_src_gt_dst=True, only_optimal=False):
     # patch_count is the number of compared entities. in the original experiment, it's 1 and in our case it's 2.
     print(f"Running experiment on {fname_in}...")
+    print("output_path:",f"{fdir_out}/{fname_out}.pkl")
+    print(f"Patch count {patch_count}")
     if not replace and os.path.exists(f"{fdir_out}/{fname_out}.pkl"):
         print(f"File {fdir_out}/{fname_out}.pkl exists. Skipping generation. Reading file...")
         results_df = pd.read_pickle(f"{fdir_out}/{fname_out}.pkl")
@@ -479,12 +508,13 @@ def run_experiment(fname_in, fdir_out, fname_out="multihop", batch_size=512 // b
     if tsv:
         df = pd.read_csv(f"{fname_in}", sep='\t', header=0)
         if 'position_sources' in df.columns:
+            print("converted_position sources")
             df['position_sources'] = df['position_sources'].apply(json.loads)
             df['position_targets'] = df['position_targets'].apply(json.loads) 
     else:
         df = pd.read_pickle(f"{fname_in}")
-    print(f"\tNumber of samples: {len(df)}")
-
+    
+        
     # BATCHing all layers combinations
     batch = []
     layer_sources= np.arange(mt.num_layers)
@@ -499,7 +529,16 @@ def run_experiment(fname_in, fdir_out, fname_out="multihop", batch_size=512 // b
         # reduces amount by (2*38/37)^2 ~= 4.2
         layers_ds = layers_ds[[np.all(layer[0] > layer[1]) for layer in layers_ds]]
     #  TODO: support further limitations on src/dst
-    for _, row in tqdm.tqdm(df.iterrows()):
+    if only_optimal:
+        layers_ds = np.expand_dims(np.array([14, 0]).reshape(1,2), -1).repeat(patch_count, axis=-1)
+        # layers_meshed = np.transpose(np.meshgrid(np.arange(10, 15), np.arange(3))).reshape(-1, 2)
+        # layers_ds = np.expand_dims(layers_meshed, -1).repeat(patch_count, axis=-1)
+    if n_samples > 0:
+        df = df.sample(n=n_samples // (layers_ds.shape[0]), replace=False, random_state=42).reset_index(drop=True)
+    
+    print(f"\tNumber of samples: {len(df)}")
+    
+    for _, row in tqdm.tqdm(df.iterrows(), total=len(df), desc=f'Building experiments dataframe'):
         for layers in layers_ds:
                 item = dict(row)
                 item.update({
@@ -508,24 +547,31 @@ def run_experiment(fname_in, fdir_out, fname_out="multihop", batch_size=512 // b
                 })
                 if layers[0].shape[0] == 1:
                     item.update({"layer_source": layers[0]})
+                
                 if layers[1].shape[0] == 1:
                     item.update({"layer_target": layers[1]})
                     
                 batch.append(item)
     experiment_df = pd.DataFrame.from_records(batch)
 
-    if n_samples > 0 and n_samples < len(experiment_df):
-        experiment_df = experiment_df.sample(n=n_samples, replace=False, random_state=42).reset_index(drop=True)
+    # if n_samples > 0 and n_samples < len(experiment_df):
+    #     experiment_df = experiment_df.sample(n=n_samples, replace=False, random_state=42).reset_index(drop=True)
 
     print(f"\tNumber of datapoints for patching experiment: {len(experiment_df)}")
 
     eval_results = evaluate_attriburte_exraction_batch_multihop(mt, experiment_df, batch_size=batch_size, patch_count=patch_count)
 
-    eval_results = eval_results[0]  # TODO: add support for the multi-patch 
+    # eval_results = eval_results  # TODO: add support for the multi-patch 
+    print("head debug")
+    print(len(eval_results["is_correct_patched"]))
+    print("len experiments df", len(experiment_df))
     results_df = experiment_df.head(len(eval_results["is_correct_patched"]))
+    print("len results df", len(results_df))
+
     for key, value in eval_results.items():
         results_df[key] = list(value)
-
+    results_df['generations_patched'] = results_df['generations_patched'].apply(lambda x: np.array2string(x, separator=', '))
+    results_df['generations_patched'] = results_df['generations_patched'].apply(lambda x: x.replace('\n', '\\n'))
     if save_output:
         if not os.path.exists(fdir_out):
             os.makedirs(fdir_out)
@@ -534,7 +580,7 @@ def run_experiment(fname_in, fdir_out, fname_out="multihop", batch_size=512 // b
 
     return results_df
 
-# %%
+# # %%
 # run_experiment("./outputs/factual/multihop_product_company_ceo.pkl",
 #                "./outputs/results/factual",
 #                fname_out="multihop_product_company_ceo", batch_size=128 // batch_size_scale, n_samples=-1,
@@ -813,24 +859,82 @@ def generate_CoT_data_v7(fname_in="./outputs/preprocessed_data_LRE_CoT/factual_m
 #                      fdir_out="./outputs/preprocessed_data_LRE_CoT/factual_multihop",
 #                      batch_size=128 // batch_size_scale, max_gen_len=20)
 
+
+
 # %%
 # cot_correct_baseline = run_experiment(
 #     f"./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv",
 #     "./outputs/preprocessed_data/factual_multihop",
 #     fname_out=f"combined_multihop_CoT_{model_name}_only_correct_True", batch_size=128, n_samples=1000,
 #     save_output=True, replace=False, tsv=True)
+# !!!!!!!!!!!!!!!!
 
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison2_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True", batch_size=128 // 4, n_samples=-1,
+#     save_output=True, replace=False, tsv=True, is_src_gt_dst=False)
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison_one_hop_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True", batch_size=128 // 4, n_samples=-1,
+#     save_output=True, replace=False, tsv=True)
+
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison_two_shot_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_hop", batch_size=128 // 4, n_samples=32 * 12000,
+#     save_output=True, replace=False, tsv=True, is_src_gt_dst=False)
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison_two_shot_two_patches_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_two_patches", batch_size=128 // 4, n_samples=32 * 10,
+#     save_output=True, replace=False, tsv=True, is_src_gt_dst=False, patch_count=2)
+## one patch experiment
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison_two_shot_two_patches_small_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_one_patch", batch_size=128 // 4, n_samples=32 * 24000,
+#     save_output=True, replace=False, tsv=True, is_src_gt_dst=False, patch_count=1)
+# # Two patches experiment
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison_two_shot_two_patches_small_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_two_patches", batch_size=128 // 4, n_samples=32 * 24000,
+#     save_output=True, replace=False, tsv=True, is_src_gt_dst=False, patch_count=2)
+## one patch experiment only 0 14:
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison_two_shot_two_patches_small_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_one_patch_only_one_combination", batch_size=128 // 4, n_samples=32 * 15 * 5 * 3,
+#     save_output=True, replace=True, tsv=True, is_src_gt_dst=False, patch_count=1, only_optimal=True)
+# two patch experiment only 0 14:
+
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison_two_shot_two_patches_small_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_two_patch_only_one_combination", batch_size=128 // 4, n_samples=-1,
+#     save_output=True, replace=True, tsv=True, is_src_gt_dst=False, patch_count=2, only_optimal=True)
+cot_correct_baseline = run_experiment(
+    f"./outputs/factual/multihop_landmark_country_comparison_two_shot_two_patches_small_only_correct_True.tsv",
+    "./outputs/preprocessed_data/factual_multihop",
+    fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_two_patches_test", batch_size=128 // 4, n_samples=32 * 10000,
+    save_output=True, replace=True, tsv=True, is_src_gt_dst=False, patch_count=2, only_optimal=False)
+
+
+# 23000
+print("Finished Experiment now trying to plot heatmaps")
 # %%
 # efficient_subset = cot_correct_baseline[
-#     cot_correct_baseline["layer_source"] < cot_correct_baseline["layer_target"]].reset_index(drop=True)
+#     cot_correct_baseline["layer_source"] > cot_correct_baseline["layer_target"]].reset_index(drop=True)
 # TODO maybe run patching for all source x target, but the killer case is when source < target
 
-# print("Base MultiHop Accuracy: ",
-#       cot_correct_baseline.groupby(['sample_id'])["is_correct_baseline_multihop3"].max().reset_index()["is_correct_baseline_multihop3"].mean())
+print("Base MultiHop Accuracy: ",
+      cot_correct_baseline.groupby(['sample_id'])["is_correct_baseline_multihop"].max().reset_index()["is_correct_baseline_multihop"].mean())
 
-# print("General Patching MultiHop Accuracy (all source layer x target layer): ",
-#       cot_correct_baseline.groupby(['sample_id'])["is_correct_patched"].max().reset_index()[
-#           "is_correct_patched"].mean())
+print("General Patching MultiHop Accuracy (all source layer x target layer): ",
+      cot_correct_baseline.groupby(['sample_id'])["is_correct_patched"].max().reset_index()[
+          "is_correct_patched"].mean())
 
 # print("Efficient Patching MultiHop Accuracy (source layer < target layer): ",
 #       efficient_subset.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean())
@@ -855,7 +959,9 @@ def plot_patching_heatmaps_from_df(patch_df, _vmin=0, _vmax=None, fname_postfix=
 
     # baseline_acc_multihop3 = patch_df["is_correct_baseline_multihop3"].mean()*100
     # patching_acc = patch_df.groupby(['sample_id'])["is_correct_patched"].max().reset_index()["is_correct_patched"].mean() * 100
-
+    patch_df['layer_source'] = patch_df['layer_sources'].apply(lambda x: x[0])
+    patch_df['layer_target'] = patch_df['layer_targets'].apply(lambda x: x[0])
+    patch_df = patch_df[patch_df['is_correct_baseline_multihop'] == False]
     heatmap_patched = patch_df.groupby(['layer_target', 'layer_source'])["is_correct_patched"].mean().unstack()
 
     FONT_SIZE_TITLE = 16
@@ -879,7 +985,7 @@ def plot_patching_heatmaps_from_df(patch_df, _vmin=0, _vmax=None, fname_postfix=
 # plot_patching_heatmaps_from_df(efficient_subset, fname_postfix="_source_smaller_than_target")
 
 # %%
-# plot_patching_heatmaps_from_df(cot_correct_baseline)
+plot_patching_heatmaps_from_df(cot_correct_baseline)
 
 # %% [markdown]
 # # Experiment 4 - CoT Let's think step by step baseline. Baseline
