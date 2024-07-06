@@ -351,7 +351,7 @@ sub_question = "What country is {} in? It is in "
 
 # %%
 def evaluate_attriburte_exraction_batch_multihop(
-        mt, df, batch_size=256 // batch_size_scale, max_gen_len=10, transform=None, patch_count=1
+        mt, df, batch_size=256 // batch_size_scale, max_gen_len=10, transform=None, patch_count=1, two_generations=False
 ):
     def _evaluate_attriburte_exraction_single_batch(batch_df):
         batch_size = len(batch_df)
@@ -420,12 +420,53 @@ def evaluate_attriburte_exraction_batch_multihop(
             ]
             for j in range(patch_count) 
         ]
+        gen_mode = not(two_generations)
         patch_hooks_list = [
-            mt.set_hs_patch_hooks(mt.model, hs_patch_config, patch_input=False, generation_mode=True)
+            mt.set_hs_patch_hooks(mt.model, hs_patch_config, patch_input=False, generation_mode=gen_mode)
             for hs_patch_config in hs_patch_configs
         ]
-
-        output = mt.model(**inp_target)
+        
+        
+        if two_generations:
+            output_first_gen = mt.model(**inp_source)
+            for patch_hooks in patch_hooks_list:
+                remove_hooks(patch_hooks)
+            hidden_reps = [
+            [
+                output_first_gen.hidden_states[layer_sources_batch[i][j] + 1][i][position_sources_batch[i][j]]
+                for i in range(batch_size)
+            ]
+            for j in range(patch_count)
+                    ]
+            if transform is not None:
+                for i in range(patch_count):
+                    for j in range(batch_size):
+                        hidden_reps[i][j] = transform(hidden_reps[i][j])
+            
+            # Step 2: do second run on target prompt, while patching the input hidden state.
+            hs_patch_configs = [
+                [
+                    {
+                        "batch_idx": i,
+                        "layer_target": layer_targets_batch[i][j],
+                        "position_target": position_targets_batch[i][j],
+                        "hidden_rep": hidden_reps[j][i],  # supposed to be reversed indices
+                        "skip_final_ln": (
+                                layer_sources_batch[i][j]
+                                == layer_targets_batch[i][j]
+                                == mt.num_layers - 1
+                        ),
+                    }
+                    for i in range(batch_size)
+                ]
+                for j in range(patch_count) 
+            ]
+            patch_hooks_list = [
+            mt.set_hs_patch_hooks(mt.model, hs_patch_config, patch_input=False, generation_mode=gen_mode)
+            for hs_patch_config in hs_patch_configs
+            ]
+            
+            
 
         # NOTE: inputs are left padded,
         # and sequence length is the same across batch
@@ -865,8 +906,8 @@ def generate_CoT_data_v7(fname_in="./outputs/preprocessed_data_LRE_CoT/factual_m
 # cot_correct_baseline = run_experiment(
 #     f"./preprocessed_data/factual_multihop/multihop_CoT_vicuna-13b-v1.1.tsv",
 #     "./outputs/preprocessed_data/factual_multihop",
-#     fname_out=f"combined_multihop_CoT_{model_name}_only_correct_True", batch_size=128, n_samples=1000,
-#     save_output=True, replace=False, tsv=True)
+#     fname_out=f"combined_multihop_CoT_{model_name}_debug", batch_size=128, n_samples=40 ** 2 * 500,
+#     save_output=False, replace=True, tsv=True, patch_count=1)
 # !!!!!!!!!!!!!!!!
 
 # cot_correct_baseline = run_experiment(
@@ -915,11 +956,11 @@ def generate_CoT_data_v7(fname_in="./outputs/preprocessed_data_LRE_CoT/factual_m
 #     "./outputs/preprocessed_data/factual_multihop",
 #     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_two_patch_only_one_combination", batch_size=128 // 4, n_samples=-1,
 #     save_output=True, replace=True, tsv=True, is_src_gt_dst=False, patch_count=2, only_optimal=True)
-cot_correct_baseline = run_experiment(
-    f"./outputs/factual/multihop_landmark_country_comparison_two_shot_two_patches_small_only_correct_True.tsv",
-    "./outputs/preprocessed_data/factual_multihop",
-    fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_two_patches_test", batch_size=128 // 4, n_samples=32 * 10000,
-    save_output=True, replace=True, tsv=True, is_src_gt_dst=False, patch_count=2, only_optimal=False)
+# cot_correct_baseline = run_experiment(
+#     f"./outputs/factual/multihop_landmark_country_comparison_two_shot_two_patches_small_only_correct_True.tsv",
+#     "./outputs/preprocessed_data/factual_multihop",
+#     fname_out=f"combined_multihop_comparison_CoT_{model_name}_only_correct_True_two_shot_two_patches_test", batch_size=128 // 4, n_samples=32 * 10000,
+#     save_output=True, replace=True, tsv=True, is_src_gt_dst=False, patch_count=2, only_optimal=False)
 
 
 # 23000
