@@ -1,0 +1,31 @@
+slurm_params:
+  job-name: "patchscope"
+  account: "gpu-research"
+  output: "slurmlog.out" # redirect stdout
+  error: "slurmlog.err" # redirect stderr
+  partition: "killable" # (see resources section)
+  time: "1440" # max time (minutes)
+  signal: "USR1@120" # how to end job when time�s up
+  nodes: "1" # number of machines
+  ntasks: "1" # number of processes
+  mem: "50000" # CPU memory (MB)
+  cpus-per-task: "8" # CPU cores per process
+  gpus: "1" # GPUs in tota
+  # constraint: "titan_xp"
+  # constraint: "geforce_rtx_3090"
+  constraint: "a6000"
+   
+
+
+train_params:
+  transcriber_ckpt: "ckpts/model-70.pt"
+
+  
+
+inference_params:
+  inst_mapping: [0, 40, 47, 24, 60]
+
+
+command: "./main"  # change this to the desired command 
+run_name: "patchscope_comparison"
+# run_name: transcribe_test

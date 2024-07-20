@@ -1,0 +1,5 @@
+#!/bin/bash
+/home/joberant/NLP_2324/jonathany/anaconda3/envs/py10/bin/python -V
+cd /home/joberant/NLP_2324/jonathany/interpretability/patchscopes/code/
+/home/joberant/NLP_2324/jonathany/anaconda3/envs/py10/bin/python multihop_script.py  "$@"
+echo Finished
